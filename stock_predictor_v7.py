@@ -61,17 +61,22 @@ try:
     TF_AVAILABLE = True
 except ImportError:
     TF_AVAILABLE = False
+    
+# Ensure state directory exists (works locally + cloud)
+STATE_DIR = Path("state")
+STATE_DIR.mkdir(parents=True, exist_ok=True)
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
-    level   = logging.INFO,
-    format  = "%(asctime)s  %(levelname)-8s  %(message)s",
-    datefmt = "%Y-%m-%d %H:%M:%S",
+    level=logging.INFO,
+    format="%(asctime)s  %(levelname)-8s  %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler("state/predictor.log", mode="a"),
+        logging.FileHandler(STATE_DIR / "predictor.log", mode="a"),
     ]
 )
+
 log = logging.getLogger("StockPredictor")
 
 # ── Reproducibility ───────────────────────────────────────────────────────────
@@ -1938,7 +1943,9 @@ def start_api(retrainer_ref):
             "message": f"Retraining {ticker} in background.",
         })
 
-    log.info("\n  ✓ REST API v7.0 → http://0.0.0.0:5000")
+    port = int(os.environ.get("PORT", 5000))
+
+    log.info(f"\n  ✓ REST API v7.0 → http://0.0.0.0:{port}")
     log.info("    GET  /predict/<TICKER>          full payload")
     log.info("    GET  /predict/<TICKER>/summary  signal card")
     log.info("    GET  /predict/<TICKER>/forecast multi-horizon")
@@ -1950,7 +1957,9 @@ def start_api(retrainer_ref):
     log.info("    GET  /cone/<TICKER>?horizon=20  forecast cone")
     log.info("    GET  /backtest/<TICKER>         backtest metrics")
     log.info("    POST /retrain/<TICKER>          trigger retrain")
-    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+    log.info(f"Starting API on port {port}")
+
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
 
 
 
@@ -2099,16 +2108,17 @@ if __name__ == "__main__":
     import sys
     retrainer, results, predictions = main()
 
-    if "--api" in sys.argv:
-        # API mode: start Flask (blocking)
-        start_api(retrainer)
-    else:
-        # Normal mode: keep alive for background retrainer
+    # Always start API in cloud environments
+    if "--no-api" in sys.argv:
+        # Optional: allow disabling API manually
         try:
-            log.info("  System live. Press Ctrl+C to stop.")
+            log.info("System live. Press Ctrl+C to stop.")
             while True:
                 time.sleep(60)
         except KeyboardInterrupt:
-            log.info("\n  Shutting down...")
+            log.info("Shutting down...")
             retrainer.stop()
-            log.info("  Done.")
+            log.info("Done.")
+    else:
+        # Default behavior: start API
+        start_api(retrainer)
