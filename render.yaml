@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: stock-predictor
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300 --keep-alive 5 --log-level info
+    healthCheckPath: /health
+
+    # Render Free tier uses ephemeral storage — model files vanish on redeploy.
+    # Upgrade to a paid plan and mount a persistent disk to keep trained models:
+    # disk:
+    #   name: predictor-data
+    #   mountPath: /opt/render/project/src
+    #   sizeGB: 10
+
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PYTHONHASHSEED
+        value: "42"
+      # Set to "1" to disable TensorFlow (saves memory on free-tier instances):
+      # - key: SKIP_TF
+      #   value: "1"

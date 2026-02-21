@@ -1,0 +1,17 @@
+# ── Web server ────────────────────────────────────────────────────────────────
+flask>=3.0,<4.0
+gunicorn>=21.2,<22.0
+
+# ── Data / ML ─────────────────────────────────────────────────────────────────
+numpy>=1.26,<2.0
+pandas>=2.2,<3.0
+scikit-learn>=1.4,<2.0
+joblib>=1.3,<2.0
+yfinance>=0.2.38
+
+# ── Plotting (headless — Agg backend only, no GUI deps) ───────────────────────
+matplotlib>=3.8,<4.0
+
+# ── Optional: deep learning (comment out to save ~1 GB of slug size) ─────────
+# tensorflow>=2.16,<3.0
+# tensorflow-cpu>=2.16,<3.0   # lighter alternative for CPU-only Render instances
